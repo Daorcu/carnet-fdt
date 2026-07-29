@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carnet FDT</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/tabler-icons.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #333; }
         .app { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background: #3d3d3d; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        header { background: #3d3d3d; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        header h1 { font-size: 20px; }
+        .header-buttons { display: flex; gap: 8px; }
         .tabs { display: flex; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
-        .tab { padding: 10px 0; background: none; border: none; cursor: pointer; font-size: 14px; color: #999; border-bottom: 3px solid transparent; }
+        .tab { padding: 10px 0; background: none; border: none; cursor: pointer; font-size: 14px; color: #999; border-bottom: 3px solid transparent; font-weight: 500; }
         .tab.active { color: #FF6B35; border-bottom-color: #FF6B35; }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 16px; border-radius: 8px; border: 1px solid #ddd; text-align: center; }
@@ -20,96 +21,140 @@
         .clients { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
         .card { background: white; padding: 16px; border-radius: 8px; border: 1px solid #ddd; }
         .card:hover { border-color: #FF6B35; }
-        .btn { padding: 10px 16px; background: white; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .btn { padding: 10px 16px; background: white; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; }
         .btn.primary { background: #FF6B35; color: white; border: none; }
         .btn.primary:hover { background: #e55a25; }
+        .btn-header { background: rgba(255,255,255,0.2); color: white; border: none; font-size: 12px; }
+        .btn-header:hover { background: rgba(255,255,255,0.3); }
         .search { margin-bottom: 20px; display: flex; gap: 8px; }
-        .search input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
+        .search input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
         .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
         .modal.active { display: flex; }
         .modal-box { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; }
         .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
         .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
         .modal-actions button { flex: 1; padding: 10px; }
-        .public-view { text-align: center; padding: 40px; }
+        .public-view { max-width: 600px; margin: 0 auto; }
         .rank { display: inline-block; background: #F59E0B; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; margin: 20px 0; }
         .progress { width: 100%; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; margin: 10px 0; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #FF6B35, #84CC16); width: 50%; }
-        .hidden { display: none; }
-        header .btn { background: rgba(255,255,255,0.2); color: white; border: none; }
-        header .btn:hover { background: rgba(255,255,255,0.3); }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #FF6B35, #84CC16); transition: width 0.3s; }
+        .hidden { display: none !important; }
+        .bloque-retos { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .bloque-header { padding: 12px; font-weight: 600; font-size: 14px; color: white; }
+        .retos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 8px; }
+        .reto-card { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 11px; background: white; }
+        .reto-card.completado { background: #f0f0f0; }
+        .reto-num { font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+        .reto-nombre { font-size: 10px; color: #999; margin: 4px 0; line-height: 1.3; }
+        .reto-xp { font-weight: 600; color: #666; margin: 4px 0; }
+        .reto-estado { font-size: 16px; margin-top: 4px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        label { transition: background 0.2s; }
+        label:hover { background: #f0f0f0 !important; }
     </style>
 </head>
 <body>
 
 <div class="app">
     <header>
-        <h1 style="font-size: 20px;">🏆 CARNET FDT</h1>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn" onclick="descargar()">📥 Descargar</button>
-            <button class="btn" onclick="document.getElementById('cargar-input').click();">📤 Cargar</button>
-            <input id="cargar-input" type="file" accept=".json" onchange="cargarJSON(event)" style="display:none;">
+        <h1>🏆 CARNET FDT</h1>
+        <div class="header-buttons">
+            <button class="btn btn-header" onclick="descargarJSON()">📥 Descargar</button>
+            <button class="btn btn-header" onclick="document.getElementById('file-input').click()">📤 Cargar</button>
+            <input id="file-input" type="file" accept=".json" onchange="cargarJSON(event)" style="display:none;">
         </div>
     </header>
 
     <div class="tabs">
-        <button class="tab active" onclick="irTab(0)">👤 Admin</button>
-        <button class="tab" onclick="irTab(1)">👁️ Vista Pública</button>
+        <button class="tab active" onclick="cambiarTab(0)">👤 Admin</button>
+        <button class="tab" onclick="cambiarTab(1)">👁️ Vista Pública</button>
     </div>
 
-    <!-- TAB ADMIN -->
-    <div id="tab-0" class="tab-content">
+    <!-- TAB 0: ADMIN -->
+    <div id="tab-0" class="tab-content active">
         <div class="stats">
-            <div class="stat-card"><div class="stat-num" id="total">0</div><div class="stat-label">Clientes</div></div>
-            <div class="stat-card"><div class="stat-num" id="promedio">0</div><div class="stat-label">XP prom</div></div>
-            <div class="stat-card"><div class="stat-num" id="rango">—</div><div class="stat-label">Rango común</div></div>
-            <div class="stat-card"><div class="stat-num" id="activos">0</div><div class="stat-label">Activos</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-clientes">0</div><div class="stat-label">Clientes</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-xp">0</div><div class="stat-label">XP prom</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-rango">—</div><div class="stat-label">Rango común</div></div>
+            <div class="stat-card"><div class="stat-num" id="stat-activos">0</div><div class="stat-label">Activos</div></div>
         </div>
 
         <div class="search">
-            <input type="text" id="buscar" placeholder="Buscar..." onkeyup="mostrarAdmin()">
-            <button class="btn primary" onclick="nuevoModal()">+ Nuevo</button>
+            <input type="text" id="buscar" placeholder="Buscar por nombre o ID..." onkeyup="mostrarAdmin()">
+            <button class="btn primary" onclick="nuevoCliente()">+ Nuevo</button>
         </div>
 
-        <div id="admin" class="clients"></div>
+        <div id="admin-clientes" class="clients"></div>
     </div>
 
-    <!-- TAB PUBLICA -->
-    <div id="tab-1" class="tab-content hidden">
-        <div id="publica" class="public-view"></div>
+    <!-- TAB 1: VISTA PÚBLICA -->
+    <div id="tab-1" class="tab-content">
+        <div id="publica-contenido" class="public-view"></div>
     </div>
 </div>
 
-<!-- MODAL -->
-<div id="modal" class="modal">
+<!-- MODAL CLIENTE -->
+<div id="modal-cliente" class="modal">
     <div class="modal-box">
-        <div class="modal-title">Nuevo cliente</div>
+        <div class="modal-title" id="modal-titulo">Nuevo cliente</div>
         <div class="form-group">
             <label>Nombre</label>
-            <input type="text" id="m-nombre" placeholder="Nombre">
+            <input type="text" id="campo-nombre" placeholder="Nombre completo">
         </div>
         <div class="form-group">
             <label>ID</label>
-            <input type="text" id="m-id" placeholder="001">
+            <input type="text" id="campo-id" placeholder="001">
         </div>
         <div class="form-group">
             <label>Teléfono</label>
-            <input type="text" id="m-telefono" placeholder="+52">
+            <input type="text" id="campo-telefono" placeholder="+52">
         </div>
         <div class="form-group">
             <label>Fecha</label>
-            <input type="date" id="m-fecha">
+            <input type="date" id="campo-fecha">
         </div>
         <div class="form-group">
             <label>XP</label>
-            <input type="number" id="m-xp" value="0" min="0">
+            <input type="number" id="campo-xp" value="0" min="0">
         </div>
         <div class="modal-actions">
             <button class="btn" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn primary" onclick="guardar()">Guardar</button>
+            <button class="btn primary" onclick="guardarCliente()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RETOS -->
+<div id="modal-retos" class="modal" style="align-items: flex-start; overflow-y: auto; padding: 20px 0;">
+    <div class="modal-box" style="max-width: 900px; width: 95%; margin-top: 20px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <div class="modal-title" id="retos-nombre" style="margin: 0;">Cliente</div>
+                <div style="font-size: 12px; color: #999;">ID: <span id="retos-id">001</span></div>
+            </div>
+            <button class="btn" onclick="cerrarVistaRetos()" style="padding: 8px 12px; font-size: 12px;">✕ Cerrar</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; padding: 12px; background: #f5f5f7; border-radius: 8px;">
+            <div>
+                <div style="font-size: 12px; color: #999;">Rango:</div>
+                <div id="retos-rango" style="font-size: 16px; font-weight: 600; color: #FF6B35;">🧭 Explorador</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #999;">XP Total:</div>
+                <div id="retos-xp" style="font-size: 16px; font-weight: 600; color: #FF6B35;">0</div>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #ddd; padding-top: 20px;" id="retos-contenedor"></div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button class="btn primary" onclick="guardarVistaRetos()" style="width: 100%;">Guardar cambios</button>
         </div>
     </div>
 </div>
@@ -141,175 +186,176 @@ const BLOQUES = [
 const XP_RETOS = [20,40,80,60,50,150, 30,50,80,120,180,300, 30,60,120,180,280,450, 30,50,120,130,150,250, 30,50,100,120,180,300, 30,80,150,250,400,600, 30,50,100,150,250,400, 80,120,180,250,320,500, 40,60,100,120,180,300];
 
 let clientes = [];
-let editando = null;
-let esVistaPublica = false;
+let clienteEnEdicion = null;
 
-function cargar() {
-    const datos = localStorage.getItem('clientes');
-    if (datos) {
-        try {
+function cargarDatos() {
+    try {
+        const datos = localStorage.getItem('clientesFDT');
+        if (datos) {
             clientes = JSON.parse(datos);
-        } catch(e) {
-            clientes = [];
+        } else {
+            clientes = [
+                {id:"001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos: Array(54).fill(false).map((_, i) => i < 15)},
+                {id:"002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos: Array(54).fill(false).map((_, i) => i < 22)},
+                {id:"003", nombre:"Carlos Gómez", telefono:"5551111111", fecha:"2024-08-01", xp:200, retos: Array(54).fill(false).map((_, i) => i < 3)}
+            ];
+            guardarDatos();
         }
-    } else {
-        clientes = [
-            {id:"001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos:new Array(54).fill(false).map((_,i)=>i<15)},
-            {id:"002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos:new Array(54).fill(false).map((_,i)=>i<22)},
-            {id:"003", nombre:"Carlos Gómez", telefono:"5551111111", fecha:"2024-08-01", xp:200, retos:new Array(54).fill(false).map((_,i)=>i<3)}
-        ];
-        guardarLS();
+    } catch(e) {
+        clientes = [];
     }
     
     const url = new URLSearchParams(window.location.search);
     if (url.has('ver')) {
-        esVistaPublica = true;
-        document.querySelector('header').style.display = 'none';
-        document.querySelector('.tabs').style.display = 'none';
-        document.getElementById('tab-0').style.display = 'none';
-        document.getElementById('tab-1').classList.remove('hidden');
-        mostrarPublica();
+        mostrarVistaPublica();
+        document.querySelector('.tabs').classList.add('hidden');
+        document.querySelector('header').classList.add('hidden');
+        document.getElementById('tab-0').classList.add('hidden');
+        document.getElementById('tab-1').classList.add('active');
     } else {
         mostrarAdmin();
     }
 }
 
-function guardarLS() {
-    localStorage.setItem('clientes', JSON.stringify(clientes));
+function guardarDatos() {
+    localStorage.setItem('clientesFDT', JSON.stringify(clientes));
+}
+
+function cambiarTab(n) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + n).classList.add('active');
+    event.target.classList.add('active');
+    
+    if (n === 1) mostrarVistaPublica();
+    else mostrarAdmin();
 }
 
 function mostrarAdmin() {
     const busca = document.getElementById('buscar').value.toLowerCase();
     const filtrados = clientes.filter(c => c.nombre.toLowerCase().includes(busca) || c.id.includes(busca));
     
-    document.getElementById('total').textContent = clientes.length;
-    const prom = clientes.length ? Math.round(clientes.reduce((a,c)=>a+c.xp,0)/clientes.length) : 0;
-    document.getElementById('promedio').textContent = prom;
+    document.getElementById('stat-clientes').textContent = clientes.length;
+    const prom = clientes.length ? Math.round(clientes.reduce((a, c) => a + c.xp, 0) / clientes.length) : 0;
+    document.getElementById('stat-xp').textContent = prom;
     
     const ranks = clientes.map(c => RANKS.find(r => c.xp >= r.min && c.xp <= r.max));
-    document.getElementById('rango').textContent = ranks.length ? ranks[0].emoji : '—';
+    document.getElementById('stat-rango').textContent = ranks.length ? ranks[0].emoji : '—';
     
     const ahora = new Date();
     const activos = clientes.filter(c => {
         const fecha = new Date(c.fecha);
-        return (ahora - fecha) / (1000*60*60*24) <= 30;
+        const dias = (ahora - fecha) / (1000 * 60 * 60 * 24);
+        return dias <= 30;
     }).length;
-    document.getElementById('activos').textContent = activos;
+    document.getElementById('stat-activos').textContent = activos;
 
     const html = filtrados.map(c => {
         const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
-        const retosCompletos = (c.retos || []).filter(x=>x).length;
+        const retosCompletos = (c.retos || []).filter(x => x).length;
         return `
             <div class="card">
                 <div style="font-weight:600;font-size:16px;margin-bottom:8px;">${c.nombre}</div>
                 <div style="font-size:12px;color:#999;margin-bottom:12px;">ID: ${c.id}</div>
-                <div style="display:inline-block;background:#F59E0B;color:white;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;">${r.emoji} ${r.name}</div>
+                <div style="display:inline-block;background:#F59E0B;color:white;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;">${r.emoji} ${r.name}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:8px;background:#f5f5f7;border-radius:6px;">
                     <div><div style="font-weight:600;color:#FF6B35;font-size:14px;">${c.xp}</div><div style="font-size:10px;color:#999;">XP</div></div>
                     <div><div style="font-weight:600;color:#FF6B35;font-size:14px;">${retosCompletos}</div><div style="font-size:10px;color:#999;">Retos</div></div>
                 </div>
                 <div style="display:flex;gap:6px;">
-                    <button class="btn" style="flex:1;font-size:12px;" onclick="editarModal('${c.id}')">✏️ Editar</button>
-                    <button class="btn" style="flex:1;font-size:12px;" onclick="eliminar('${c.id}')">🗑️ Eliminar</button>
+                    <button class="btn" style="flex:1;" onclick="editarCliente('${c.id}')">✏️ Editar</button>
+                    <button class="btn" style="flex:1;" onclick="eliminarCliente('${c.id}')">🗑️ Eliminar</button>
                 </div>
             </div>
         `;
     }).join('');
-    document.getElementById('admin').innerHTML = html || '<p style="grid-column:1/-1;text-align:center;color:#999;">Sin clientes</p>';
+    
+    document.getElementById('admin-clientes').innerHTML = html || '<p style="text-align:center;color:#999;grid-column:1/-1;padding:40px;font-size:14px;">Sin clientes</p>';
 }
 
-function nuevoModal() {
-    editando = null;
-    document.getElementById('m-nombre').value = '';
-    document.getElementById('m-id').value = '';
-    document.getElementById('m-telefono').value = '';
-    document.getElementById('m-fecha').valueAsDate = new Date();
-    document.getElementById('m-xp').value = '0';
-    document.getElementById('modal').classList.add('active');
+function nuevoCliente() {
+    clienteEnEdicion = null;
+    document.getElementById('modal-titulo').textContent = 'Nuevo cliente';
+    document.getElementById('campo-nombre').value = '';
+    document.getElementById('campo-id').value = '';
+    document.getElementById('campo-telefono').value = '';
+    document.getElementById('campo-fecha').valueAsDate = new Date();
+    document.getElementById('campo-xp').value = '0';
+    document.getElementById('modal-cliente').classList.add('active');
 }
 
-function editarModal(id) {
-    editando = clientes.find(c => c.id === id);
-    document.getElementById('m-nombre').value = editando.nombre;
-    document.getElementById('m-id').value = editando.id;
-    document.getElementById('m-telefono').value = editando.telefono;
-    document.getElementById('m-fecha').value = editando.fecha;
-    document.getElementById('m-xp').value = editando.xp;
-    document.getElementById('modal').classList.add('active');
+function editarCliente(id) {
+    clienteEnEdicion = clientes.find(c => c.id === id);
+    abrirVistaRetos(id);
 }
 
-function guardar() {
-    const nombre = document.getElementById('m-nombre').value;
-    const id = document.getElementById('m-id').value;
-    const telefono = document.getElementById('m-telefono').value;
-    const fecha = document.getElementById('m-fecha').value;
-    const xp = parseInt(document.getElementById('m-xp').value) || 0;
+function guardarCliente() {
+    const nombre = document.getElementById('campo-nombre').value.trim();
+    const id = document.getElementById('campo-id').value.trim();
+    const telefono = document.getElementById('campo-telefono').value.trim();
+    const fecha = document.getElementById('campo-fecha').value;
+    const xp = parseInt(document.getElementById('campo-xp').value) || 0;
 
     if (!nombre || !id) {
-        alert('Nombre e ID requeridos');
+        alert('⚠️ Nombre e ID son requeridos');
         return;
     }
 
-    if (editando) {
-        const idx = clientes.findIndex(c => c.id === editando.id);
-        clientes[idx] = {id, nombre, telefono, fecha, xp, retos: editando.retos || new Array(54).fill(false)};
+    if (clienteEnEdicion) {
+        const idx = clientes.findIndex(c => c.id === clienteEnEdicion.id);
+        clientes[idx] = {id, nombre, telefono, fecha, xp, retos: clienteEnEdicion.retos || Array(54).fill(false)};
     } else {
-        clientes.push({id, nombre, telefono, fecha, xp, retos: new Array(54).fill(false)});
+        if (clientes.find(c => c.id === id)) {
+            alert('⚠️ Ya existe un cliente con este ID');
+            return;
+        }
+        clientes.push({id, nombre, telefono, fecha, xp, retos: Array(54).fill(false)});
     }
 
-    guardarLS();
+    guardarDatos();
     mostrarAdmin();
     cerrarModal();
 }
 
-function eliminar(id) {
-    if (confirm('¿Eliminar?')) {
+function eliminarCliente(id) {
+    if (confirm('¿Estás seguro de eliminar este cliente?')) {
         clientes = clientes.filter(c => c.id !== id);
-        guardarLS();
+        guardarDatos();
         mostrarAdmin();
     }
 }
 
 function cerrarModal() {
-    document.getElementById('modal').classList.remove('active');
+    document.getElementById('modal-cliente').classList.remove('active');
 }
 
-function irTab(n) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById('tab-' + n).classList.remove('hidden');
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-    event.target.classList.add('active');
-    
-    if (n === 1) mostrarPublica();
-}
-
-function mostrarPublica() {
+function mostrarVistaPublica() {
     const url = new URLSearchParams(window.location.search);
-    const id = url.get('ver');
-    
-    if (!id) {
-        document.getElementById('publica').innerHTML = '<p>Accede con ?ver=ID_CLIENTE</p>';
+    const idBuscado = url.get('ver');
+
+    if (!idBuscado) {
+        document.getElementById('publica-contenido').innerHTML = '<p style="text-align:center;color:#999;padding:40px;font-size:14px;">Accede con <code>?ver=ID_CLIENTE</code></p>';
         return;
     }
 
-    const c = clientes.find(x => x.id === id);
-    if (!c) {
-        document.getElementById('publica').innerHTML = '<p>❌ Cliente no encontrado: ' + id + '</p><p style="font-size:12px;color:#999;margin-top:12px;">Descarga datos primero en este dispositivo</p>';
+    const cliente = clientes.find(c => c.id === idBuscado);
+    if (!cliente) {
+        document.getElementById('publica-contenido').innerHTML = '<p style="text-align:center;color:#999;padding:40px;"><strong>❌ Cliente no encontrado:</strong> ' + idBuscado + '</p><p style="font-size:12px;color:#999;margin-top:12px;">Descarga y carga los datos primero en este dispositivo</p>';
         return;
     }
 
-    const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
-    const prog = Math.min(c.xp / 8000 * 100, 100);
-    const retosCompletos = (c.retos || []).filter(x=>x).length;
+    const r = RANKS.find(rk => cliente.xp >= rk.min && cliente.xp <= rk.max);
+    const prog = Math.min((cliente.xp / 8000) * 100, 100);
+    const retosCompletos = (cliente.retos || []).filter(x => x).length;
 
     let html = `
-        <div style="max-width:500px;margin:0 auto;">
-            <div style="font-size:48px;margin-bottom:12px;">${c.nombre.charAt(0).toUpperCase()}</div>
-            <h1 style="font-size:24px;margin-bottom:8px;">${c.nombre}</h1>
+        <div style="text-align:center;margin-bottom:30px;">
+            <div style="font-size:48px;margin-bottom:12px;">${cliente.nombre.charAt(0).toUpperCase()}</div>
+            <h1 style="font-size:24px;margin-bottom:8px;">${cliente.nombre}</h1>
             <div class="rank">${r.emoji} ${r.name}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
                 <div style="background:#f5f5f7;padding:16px;border-radius:8px;">
-                    <div style="font-size:28px;font-weight:600;color:#FF6B35;">${c.xp}</div>
+                    <div style="font-size:28px;font-weight:600;color:#FF6B35;">${cliente.xp}</div>
                     <div style="font-size:12px;color:#999;">Puntos</div>
                 </div>
                 <div style="background:#f5f5f7;padding:16px;border-radius:8px;">
@@ -317,49 +363,39 @@ function mostrarPublica() {
                     <div style="font-size:12px;color:#999;">Retos</div>
                 </div>
             </div>
-            <div style="margin:20px 0;">
+            <div>
                 <div style="font-size:12px;color:#666;margin-bottom:8px;">Progreso: ${Math.round(prog)}%</div>
                 <div class="progress"><div class="progress-bar" style="width:${prog}%;"></div></div>
-                <div style="font-size:11px;color:#999;">${c.xp} / 8000 XP</div>
+                <div style="font-size:11px;color:#999;">${cliente.xp} / 8000 XP</div>
             </div>
-            <div style="margin-top:30px;">
-                <div style="font-weight:600;margin-bottom:16px;">Mis Retos</div>
+        </div>
+        <h2 style="font-weight:600;margin-bottom:16px;text-align:center;">Mis Retos</h2>
     `;
-    
+
     BLOQUES.forEach((bloque, idx) => {
-        html += `<div style="margin-bottom:20px;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
-            <div style="background:${bloque.color};color:white;padding:12px;font-weight:600;font-size:14px;">${bloque.nombre}</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:8px;">
-        `;
+        html += `<div class="bloque-retos" style="border-color:${bloque.color};"><div class="bloque-header" style="background-color:${bloque.color};">${bloque.nombre}</div><div class="retos-grid">`;
         
         bloque.retos.forEach((reto, rIdx) => {
             const totalIdx = idx * 6 + rIdx;
-            const completado = c.retos ? c.retos[totalIdx] : false;
+            const completado = cliente.retos ? cliente.retos[totalIdx] : false;
             const xp = XP_RETOS[totalIdx];
-            html += `
-                <div style="border:1px solid #ddd;padding:12px;text-align:center;font-size:11px;background:${completado?'#f0f0f0':'white'};">
-                    <div style="font-weight:600;color:${bloque.color};">N${rIdx+1}</div>
-                    <div style="font-size:10px;color:#999;margin:4px 0;">${reto}</div>
-                    <div style="font-weight:600;color:#666;">${xp} XP</div>
-                    <div style="font-size:16px;margin-top:4px;">${completado?'✅':'⭕'}</div>
-                </div>
-            `;
+            html += `<div class="reto-card ${completado ? 'completado' : ''}"><div class="reto-num" style="color:${bloque.color};">N${rIdx + 1}</div><div class="reto-nombre">${reto}</div><div class="reto-xp">${xp} XP</div><div class="reto-estado">${completado ? '✅' : '⭕'}</div></div>`;
         });
         
         html += `</div></div>`;
     });
-    
-    html += `</div><p style="color:#999;margin-top:30px;font-size:14px;text-align:center;">¡Sigue completando retos para subir de nivel!</p></div>`;
-    
-    document.getElementById('publica').innerHTML = html;
+
+    html += `<p style="color:#999;margin-top:30px;font-size:14px;text-align:center;padding:20px;background:#f5f5f7;border-radius:8px;">¡Sigue completando retos para subir de nivel!</p>`;
+
+    document.getElementById('publica-contenido').innerHTML = html;
 }
 
-function descargar() {
+function descargarJSON() {
     const blob = new Blob([JSON.stringify(clientes, null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'carnet-' + new Date().toISOString().slice(0,10) + '.json';
+    a.download = 'carnet-fdt-' + new Date().toISOString().split('T')[0] + '.json';
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -367,207 +403,115 @@ function descargar() {
 function cargarJSON(e) {
     const file = e.target.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
-    reader.onload = evt => {
+    reader.onload = (evt) => {
         try {
             const datos = JSON.parse(evt.target.result);
             if (Array.isArray(datos)) {
                 clientes = datos;
-                guardarLS();
+                guardarDatos();
                 mostrarAdmin();
-                alert('✅ Datos cargados');
-            } else alert('Formato inválido');
-        } catch (err) {
-            alert('Error al cargar');
+                alert('✅ Datos cargados correctamente');
+            } else {
+                alert('❌ Formato inválido');
+            }
+        } catch(err) {
+            alert('❌ Error al cargar el archivo');
         }
     };
     reader.readAsText(file);
     e.target.value = '';
 }
 
-window.addEventListener('load', cargar);
-</script>
+function abrirVistaRetos(id) {
+    clienteEnEdicion = clientes.find(c => c.id === id);
+    if (!clienteEnEdicion.retos) {
+        clienteEnEdicion.retos = Array(54).fill(false);
+    }
 
-function mostrarAdmin() {
-    const busca = document.getElementById('buscar').value.toLowerCase();
-    const filtrados = clientes.filter(c => c.nombre.toLowerCase().includes(busca) || c.id.includes(busca));
+    document.getElementById('retos-nombre').textContent = clienteEnEdicion.nombre;
+    document.getElementById('retos-id').textContent = clienteEnEdicion.id;
     
-    document.getElementById('total').textContent = clientes.length;
-    const prom = clientes.length ? Math.round(clientes.reduce((a,c)=>a+c.xp,0)/clientes.length) : 0;
-    document.getElementById('promedio').textContent = prom;
-    
-    const ranks = clientes.map(c => RANKS.find(r => c.xp >= r.min && c.xp <= r.max));
-    document.getElementById('rango').textContent = ranks.length ? ranks[0].emoji : '—';
-    
-    const ahora = new Date();
-    const activos = clientes.filter(c => {
-        const fecha = new Date(c.fecha);
-        return (ahora - fecha) / (1000*60*60*24) <= 30;
-    }).length;
-    document.getElementById('activos').textContent = activos;
-
-    const html = filtrados.map(c => {
-        const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
-        return `
-            <div class="card">
-                <div style="font-weight:600;font-size:16px;margin-bottom:8px;">${c.nombre}</div>
-                <div style="font-size:12px;color:#999;margin-bottom:12px;">ID: ${c.id}</div>
-                <div style="display:inline-block;background:#F59E0B;color:white;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;">${r.emoji} ${r.name}</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:8px;background:#f5f5f7;border-radius:6px;">
-                    <div><div style="font-weight:600;color:#FF6B35;font-size:14px;">${c.xp}</div><div style="font-size:10px;color:#999;">XP</div></div>
-                </div>
-                <div style="display:flex;gap:6px;">
-                    <button class="btn" style="flex:1;font-size:12px;" onclick="editarModal('${c.id}')">Editar</button>
-                    <button class="btn" style="flex:1;font-size:12px;" onclick="eliminar('${c.id}')">Eliminar</button>
-                </div>
-            </div>
+    let html = '';
+    BLOQUES.forEach((bloque, idx) => {
+        html += `<div class="bloque-retos" style="border-color: ${bloque.color}; margin-bottom: 16px;">
+            <div class="bloque-header" style="background-color: ${bloque.color};">${bloque.nombre}</div>
+            <div style="padding: 12px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
         `;
-    }).join('');
-    document.getElementById('admin').innerHTML = html || '<p style="grid-column:1/-1;text-align:center;color:#999;">Sin clientes</p>';
+        
+        bloque.retos.forEach((reto, rIdx) => {
+            const totalIdx = idx * 6 + rIdx;
+            const completado = clienteEnEdicion.retos[totalIdx];
+            const xp = XP_RETOS[totalIdx];
+            
+            html += `
+                <label style="display: flex; align-items: center; padding: 12px; background: ${completado ? '#f0f0f0' : 'white'}; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" data-idx="${totalIdx}" ${completado ? 'checked' : ''} onchange="actualizarRetos()" style="margin-right: 8px; cursor: pointer;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 13px; color: ${bloque.color};">N${rIdx + 1}: ${reto}</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 4px;">${xp} XP</div>
+                    </div>
+                </label>
+            `;
+        });
+        
+        html += `</div></div></div>`;
+    });
+
+    document.getElementById('retos-contenedor').innerHTML = html;
+    actualizarRetos();
+    document.getElementById('modal-retos').classList.add('active');
 }
 
-function nuevoModal() {
-    editando = null;
-    document.getElementById('m-nombre').value = '';
-    document.getElementById('m-id').value = '';
-    document.getElementById('m-telefono').value = '';
-    document.getElementById('m-fecha').valueAsDate = new Date();
-    document.getElementById('m-xp').value = '0';
-    document.getElementById('modal').classList.add('active');
-}
-
-function editarModal(id) {
-    editando = clientes.find(c => c.id === id);
-    document.getElementById('m-nombre').value = editando.nombre;
-    document.getElementById('m-id').value = editando.id;
-    document.getElementById('m-telefono').value = editando.telefono;
-    document.getElementById('m-fecha').value = editando.fecha;
-    document.getElementById('m-xp').value = editando.xp;
-    document.getElementById('modal').classList.add('active');
-}
-
-function guardar() {
-    const nombre = document.getElementById('m-nombre').value;
-    const id = document.getElementById('m-id').value;
-    const telefono = document.getElementById('m-telefono').value;
-    const fecha = document.getElementById('m-fecha').value;
-    const xp = parseInt(document.getElementById('m-xp').value) || 0;
-
-    if (!nombre || !id) {
-        alert('Nombre e ID requeridos');
-        return;
-    }
-
-    if (editando) {
-        const idx = clientes.findIndex(c => c.id === editando.id);
-        clientes[idx] = {id, nombre, telefono, fecha, xp};
-    } else {
-        clientes.push({id, nombre, telefono, fecha, xp});
-    }
-
-    guardarLS();
-    mostrarAdmin();
-    cerrarModal();
-}
-
-function eliminar(id) {
-    if (confirm('¿Eliminar?')) {
-        clientes = clientes.filter(c => c.id !== id);
-        guardarLS();
-        mostrarAdmin();
-    }
-}
-
-function cerrarModal() {
-    document.getElementById('modal').classList.remove('active');
-}
-
-function irTab(n) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById('tab-' + n).classList.remove('hidden');
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-    event.target.classList.add('active');
+function actualizarRetos() {
+    let xpTotal = 0;
     
-    if (n === 1) mostrarPublica();
-}
-
-function mostrarPublica() {
-    const url = new URLSearchParams(window.location.search);
-    const id = url.get('ver');
-    
-    if (!id) {
-        document.getElementById('publica').innerHTML = '<p>Accede con ?ver=ID_CLIENTE</p>';
-        return;
-    }
-
-    const c = clientes.find(x => x.id === id);
-    if (!c) {
-        document.getElementById('publica').innerHTML = '<p>❌ Cliente no encontrado: ' + id + '</p><p style="font-size:12px;color:#999;margin-top:12px;">Descarga datos primero en este dispositivo</p>';
-        return;
-    }
-
-    const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
-    const prog = Math.min(c.xp / 8000 * 100, 100);
-
-    document.getElementById('publica').innerHTML = `
-        <div style="max-width:500px;margin:0 auto;">
-            <div style="font-size:48px;margin-bottom:12px;">${c.nombre.charAt(0).toUpperCase()}</div>
-            <h1 style="font-size:24px;margin-bottom:8px;">${c.nombre}</h1>
-            <div class="rank">${r.emoji} ${r.name}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
-                <div style="background:#f5f5f7;padding:16px;border-radius:8px;">
-                    <div style="font-size:28px;font-weight:600;color:#FF6B35;">${c.xp}</div>
-                    <div style="font-size:12px;color:#999;">Puntos</div>
-                </div>
-            </div>
-            <div style="margin:20px 0;">
-                <div style="font-size:12px;color:#666;margin-bottom:8px;">Progreso: ${Math.round(prog)}%</div>
-                <div class="progress"><div class="progress-bar" style="width:${prog}%;"></div></div>
-                <div style="font-size:11px;color:#999;">${c.xp} / 8000 XP</div>
-            </div>
-            <p style="color:#999;margin-top:30px;font-size:14px;">¡Sigue completando retos para subir de nivel!</p>
-        </div>
-    `;
-}
-
-function descargar() {
-    const blob = new Blob([JSON.stringify(clientes, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'carnet-' + new Date().toISOString().slice(0,10) + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function cargar(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-        try {
-            const datos = JSON.parse(evt.target.result);
-            if (Array.isArray(datos)) {
-                clientes = datos;
-                guardarLS();
-                mostrarAdmin();
-                alert('✅ Datos cargados');
-            } else alert('Formato inválido');
-        } catch (err) {
-            alert('Error al cargar');
+    document.querySelectorAll('#retos-contenedor input[type="checkbox"]').forEach(input => {
+        const idx = parseInt(input.dataset.idx);
+        const checked = input.checked;
+        
+        clienteEnEdicion.retos[idx] = checked;
+        
+        if (checked) {
+            xpTotal += XP_RETOS[idx];
         }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    });
+
+    document.getElementById('retos-xp').textContent = xpTotal;
+    
+    const r = RANKS.find(rk => xpTotal >= rk.min && xpTotal <= rk.max);
+    document.getElementById('retos-rango').textContent = r.emoji + ' ' + r.name;
 }
 
-window.addEventListener('load', () => {
-    cargar();
-    const url = new URLSearchParams(window.location.search);
-    if (url.has('ver')) {
-        document.querySelectorAll('.tab')[1].click();
-    }
-});
+function guardarVistaRetos() {
+    const idx = clientes.findIndex(c => c.id === clienteEnEdicion.id);
+    
+    // Calcular XP total
+    let xpTotal = 0;
+    clienteEnEdicion.retos.forEach((completado, i) => {
+        if (completado) {
+            xpTotal += XP_RETOS[i];
+        }
+    });
+    
+    clientes[idx] = {
+        ...clienteEnEdicion,
+        xp: xpTotal
+    };
+    
+    guardarDatos();
+    mostrarAdmin();
+    cerrarVistaRetos();
+}
+
+function cerrarVistaRetos() {
+    document.getElementById('modal-retos').classList.remove('active');
+    clienteEnEdicion = null;
+}
+
+window.addEventListener('load', cargarDatos);
 </script>
 
 </body>
