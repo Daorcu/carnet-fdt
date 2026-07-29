@@ -51,7 +51,7 @@
         <div style="display: flex; gap: 8px;">
             <button class="btn" onclick="descargar()">📥 Descargar</button>
             <button class="btn" onclick="document.getElementById('cargar-input').click();">📤 Cargar</button>
-            <input id="cargar-input" type="file" accept=".json" onchange="cargar(event)" style="display:none;">
+            <input id="cargar-input" type="file" accept=".json" onchange="cargarJSON(event)" style="display:none;">
         </div>
     </header>
 
@@ -126,26 +126,267 @@ const RANKS = [
     {min:8000, max:Infinity, emoji:"🔥", name:"Dios"}
 ];
 
+const BLOQUES = [
+    {nombre:"Redes Sociales", color:"#FF6B35", retos:["Síguenos en Instagram","Sube foto etiquetándonos","Sube un Reel (mín 10s)","Comparte en stories","Comenta en 3 posts","Grábate usando producto"]},
+    {nombre:"Compras Mínimas", color:"#7C3AED", retos:["Compra $100 MXN","Compra $200 MXN","Compra $400 MXN","Compra $600 MXN","Compra $850 MXN","Compra $1,100 MXN+"]},
+    {nombre:"Frecuencia", color:"#14B8A6", retos:["2 compras/mes","4 compras/2 meses","3 meses consecutivos","6 compras/3 meses","6 meses consecutivos","12 compras/año"]},
+    {nombre:"Personalización", color:"#F59E0B", retos:["Color personalizado","Grabado láser","Funko personal","Funko mascota","Funko familiar","Funko original"]},
+    {nombre:"Creador", color:"#84CC16", retos:["Tu primer producto","Adorno casa","Llavero personalizado","Imán refri","Separador libros","Set 3 piezas"]},
+    {nombre:"Referidos", color:"#EC4899", retos:["Recomienda WhatsApp","Trae 1 amigo","Trae 2 amigos","Trae 3 amigos","Trae 5 amigos","Trae 8 amigos"]},
+    {nombre:"Premium", color:"#3B82F6", retos:["1 mes activo","Acumula $500","3 meses activo","Acumula $1,500","6 meses activo","Acumula $4,000"]},
+    {nombre:"Corte Láser", color:"#8B5CF6", retos:["Grabado básico","Llavero favorito","Organizador escritorio","Adorno cocina","Marcador libros","Set regalo"]},
+    {nombre:"Familia Maker", color:"#06B6D4", retos:["Dibujo familiar","Elección familiar","Color familia","Historia familiar","Mascota familiar","Proyecto equipo"]}
+];
+
+const XP_RETOS = [20,40,80,60,50,150, 30,50,80,120,180,300, 30,60,120,180,280,450, 30,50,120,130,150,250, 30,50,100,120,180,300, 30,80,150,250,400,600, 30,50,100,150,250,400, 80,120,180,250,320,500, 40,60,100,120,180,300];
+
 let clientes = [];
 let editando = null;
+let esVistaPublica = false;
 
 function cargar() {
     const datos = localStorage.getItem('clientes');
-    if (datos) clientes = JSON.parse(datos);
-    else {
+    if (datos) {
+        try {
+            clientes = JSON.parse(datos);
+        } catch(e) {
+            clientes = [];
+        }
+    } else {
         clientes = [
-            {id:"001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750},
-            {id:"002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200},
-            {id:"003", nombre:"Carlos Gómez", telefono:"5551111111", fecha:"2024-08-01", xp:200}
+            {id:"001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos:new Array(54).fill(false).map((_,i)=>i<15)},
+            {id:"002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos:new Array(54).fill(false).map((_,i)=>i<22)},
+            {id:"003", nombre:"Carlos Gómez", telefono:"5551111111", fecha:"2024-08-01", xp:200, retos:new Array(54).fill(false).map((_,i)=>i<3)}
         ];
         guardarLS();
     }
-    mostrarAdmin();
+    
+    const url = new URLSearchParams(window.location.search);
+    if (url.has('ver')) {
+        esVistaPublica = true;
+        document.querySelector('header').style.display = 'none';
+        document.querySelector('.tabs').style.display = 'none';
+        document.getElementById('tab-0').style.display = 'none';
+        document.getElementById('tab-1').classList.remove('hidden');
+        mostrarPublica();
+    } else {
+        mostrarAdmin();
+    }
 }
 
 function guardarLS() {
     localStorage.setItem('clientes', JSON.stringify(clientes));
 }
+
+function mostrarAdmin() {
+    const busca = document.getElementById('buscar').value.toLowerCase();
+    const filtrados = clientes.filter(c => c.nombre.toLowerCase().includes(busca) || c.id.includes(busca));
+    
+    document.getElementById('total').textContent = clientes.length;
+    const prom = clientes.length ? Math.round(clientes.reduce((a,c)=>a+c.xp,0)/clientes.length) : 0;
+    document.getElementById('promedio').textContent = prom;
+    
+    const ranks = clientes.map(c => RANKS.find(r => c.xp >= r.min && c.xp <= r.max));
+    document.getElementById('rango').textContent = ranks.length ? ranks[0].emoji : '—';
+    
+    const ahora = new Date();
+    const activos = clientes.filter(c => {
+        const fecha = new Date(c.fecha);
+        return (ahora - fecha) / (1000*60*60*24) <= 30;
+    }).length;
+    document.getElementById('activos').textContent = activos;
+
+    const html = filtrados.map(c => {
+        const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
+        const retosCompletos = (c.retos || []).filter(x=>x).length;
+        return `
+            <div class="card">
+                <div style="font-weight:600;font-size:16px;margin-bottom:8px;">${c.nombre}</div>
+                <div style="font-size:12px;color:#999;margin-bottom:12px;">ID: ${c.id}</div>
+                <div style="display:inline-block;background:#F59E0B;color:white;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;">${r.emoji} ${r.name}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:8px;background:#f5f5f7;border-radius:6px;">
+                    <div><div style="font-weight:600;color:#FF6B35;font-size:14px;">${c.xp}</div><div style="font-size:10px;color:#999;">XP</div></div>
+                    <div><div style="font-weight:600;color:#FF6B35;font-size:14px;">${retosCompletos}</div><div style="font-size:10px;color:#999;">Retos</div></div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn" style="flex:1;font-size:12px;" onclick="editarModal('${c.id}')">✏️ Editar</button>
+                    <button class="btn" style="flex:1;font-size:12px;" onclick="eliminar('${c.id}')">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('admin').innerHTML = html || '<p style="grid-column:1/-1;text-align:center;color:#999;">Sin clientes</p>';
+}
+
+function nuevoModal() {
+    editando = null;
+    document.getElementById('m-nombre').value = '';
+    document.getElementById('m-id').value = '';
+    document.getElementById('m-telefono').value = '';
+    document.getElementById('m-fecha').valueAsDate = new Date();
+    document.getElementById('m-xp').value = '0';
+    document.getElementById('modal').classList.add('active');
+}
+
+function editarModal(id) {
+    editando = clientes.find(c => c.id === id);
+    document.getElementById('m-nombre').value = editando.nombre;
+    document.getElementById('m-id').value = editando.id;
+    document.getElementById('m-telefono').value = editando.telefono;
+    document.getElementById('m-fecha').value = editando.fecha;
+    document.getElementById('m-xp').value = editando.xp;
+    document.getElementById('modal').classList.add('active');
+}
+
+function guardar() {
+    const nombre = document.getElementById('m-nombre').value;
+    const id = document.getElementById('m-id').value;
+    const telefono = document.getElementById('m-telefono').value;
+    const fecha = document.getElementById('m-fecha').value;
+    const xp = parseInt(document.getElementById('m-xp').value) || 0;
+
+    if (!nombre || !id) {
+        alert('Nombre e ID requeridos');
+        return;
+    }
+
+    if (editando) {
+        const idx = clientes.findIndex(c => c.id === editando.id);
+        clientes[idx] = {id, nombre, telefono, fecha, xp, retos: editando.retos || new Array(54).fill(false)};
+    } else {
+        clientes.push({id, nombre, telefono, fecha, xp, retos: new Array(54).fill(false)});
+    }
+
+    guardarLS();
+    mostrarAdmin();
+    cerrarModal();
+}
+
+function eliminar(id) {
+    if (confirm('¿Eliminar?')) {
+        clientes = clientes.filter(c => c.id !== id);
+        guardarLS();
+        mostrarAdmin();
+    }
+}
+
+function cerrarModal() {
+    document.getElementById('modal').classList.remove('active');
+}
+
+function irTab(n) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-' + n).classList.remove('hidden');
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    if (n === 1) mostrarPublica();
+}
+
+function mostrarPublica() {
+    const url = new URLSearchParams(window.location.search);
+    const id = url.get('ver');
+    
+    if (!id) {
+        document.getElementById('publica').innerHTML = '<p>Accede con ?ver=ID_CLIENTE</p>';
+        return;
+    }
+
+    const c = clientes.find(x => x.id === id);
+    if (!c) {
+        document.getElementById('publica').innerHTML = '<p>❌ Cliente no encontrado: ' + id + '</p><p style="font-size:12px;color:#999;margin-top:12px;">Descarga datos primero en este dispositivo</p>';
+        return;
+    }
+
+    const r = RANKS.find(r => c.xp >= r.min && c.xp <= r.max);
+    const prog = Math.min(c.xp / 8000 * 100, 100);
+    const retosCompletos = (c.retos || []).filter(x=>x).length;
+
+    let html = `
+        <div style="max-width:500px;margin:0 auto;">
+            <div style="font-size:48px;margin-bottom:12px;">${c.nombre.charAt(0).toUpperCase()}</div>
+            <h1 style="font-size:24px;margin-bottom:8px;">${c.nombre}</h1>
+            <div class="rank">${r.emoji} ${r.name}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+                <div style="background:#f5f5f7;padding:16px;border-radius:8px;">
+                    <div style="font-size:28px;font-weight:600;color:#FF6B35;">${c.xp}</div>
+                    <div style="font-size:12px;color:#999;">Puntos</div>
+                </div>
+                <div style="background:#f5f5f7;padding:16px;border-radius:8px;">
+                    <div style="font-size:28px;font-weight:600;color:#FF6B35;">${retosCompletos}</div>
+                    <div style="font-size:12px;color:#999;">Retos</div>
+                </div>
+            </div>
+            <div style="margin:20px 0;">
+                <div style="font-size:12px;color:#666;margin-bottom:8px;">Progreso: ${Math.round(prog)}%</div>
+                <div class="progress"><div class="progress-bar" style="width:${prog}%;"></div></div>
+                <div style="font-size:11px;color:#999;">${c.xp} / 8000 XP</div>
+            </div>
+            <div style="margin-top:30px;">
+                <div style="font-weight:600;margin-bottom:16px;">Mis Retos</div>
+    `;
+    
+    BLOQUES.forEach((bloque, idx) => {
+        html += `<div style="margin-bottom:20px;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+            <div style="background:${bloque.color};color:white;padding:12px;font-weight:600;font-size:14px;">${bloque.nombre}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:8px;">
+        `;
+        
+        bloque.retos.forEach((reto, rIdx) => {
+            const totalIdx = idx * 6 + rIdx;
+            const completado = c.retos ? c.retos[totalIdx] : false;
+            const xp = XP_RETOS[totalIdx];
+            html += `
+                <div style="border:1px solid #ddd;padding:12px;text-align:center;font-size:11px;background:${completado?'#f0f0f0':'white'};">
+                    <div style="font-weight:600;color:${bloque.color};">N${rIdx+1}</div>
+                    <div style="font-size:10px;color:#999;margin:4px 0;">${reto}</div>
+                    <div style="font-weight:600;color:#666;">${xp} XP</div>
+                    <div style="font-size:16px;margin-top:4px;">${completado?'✅':'⭕'}</div>
+                </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    html += `</div><p style="color:#999;margin-top:30px;font-size:14px;text-align:center;">¡Sigue completando retos para subir de nivel!</p></div>`;
+    
+    document.getElementById('publica').innerHTML = html;
+}
+
+function descargar() {
+    const blob = new Blob([JSON.stringify(clientes, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'carnet-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function cargarJSON(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+        try {
+            const datos = JSON.parse(evt.target.result);
+            if (Array.isArray(datos)) {
+                clientes = datos;
+                guardarLS();
+                mostrarAdmin();
+                alert('✅ Datos cargados');
+            } else alert('Formato inválido');
+        } catch (err) {
+            alert('Error al cargar');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+
+window.addEventListener('load', cargar);
+</script>
 
 function mostrarAdmin() {
     const busca = document.getElementById('buscar').value.toLowerCase();
