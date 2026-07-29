@@ -690,6 +690,15 @@ header i {
   padding: 0;
 }
 
+.carnet-nivel-nombre {
+  font-size: 9px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 2px 0;
+}
+
 .carnet-nivel {
   padding: 10px 8px;
   text-align: center;
@@ -697,6 +706,10 @@ header i {
   border-bottom: 0.5px solid var(--border);
   font-size: 11px;
   background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: space-between;
 }
 
 .carnet-nivel:nth-child(6n) {
@@ -902,6 +915,10 @@ header i {
       <span>CARNET FDT</span>
     </div>
     <div class="header-actions">
+      <button class="btn" id="syncStatus" onclick="mostrarStatusSync()" title="Estado de sincronización">
+        <i class="ti ti-cloud-check"></i>
+        <span id="syncText">Sincronizado</span>
+      </button>
       <button class="btn" onclick="descargarBackup()" title="Descargar datos">
         <i class="ti ti-download"></i>
         <span>Descargar</span>
@@ -1094,11 +1111,129 @@ const bloques = [
 
 const xpPorReto = [20, 40, 80, 60, 50, 150, 30, 50, 80, 120, 180, 300, 30, 60, 120, 180, 280, 450, 30, 50, 120, 130, 150, 250, 30, 50, 100, 120, 180, 300, 30, 80, 150, 250, 400, 600, 30, 50, 100, 150, 250, 400, 80, 120, 180, 250, 320, 500, 40, 60, 100, 120, 180, 300];
 
-let clientes = [];
-let clienteEditando = null;
-let clienteVisualizando = null;
+const GITHUB_USER = 'daorcu';
+const GITHUB_REPO = 'carnet-fdt';
+const GITHUB_FILE = 'clientes.json';
+const GITHUB_BRANCH = 'main';
 
-function switchTab(tab) {
+let GITHUB_TOKEN = localStorage.getItem('github_token') || null;
+
+async function obtenerTokenGitHub() {
+  if (GITHUB_TOKEN) return true;
+  
+  const token = prompt('🔐 Token de GitHub requerido:\nPega tu token personal (ghp_...)');
+  if (!token) return false;
+  
+  GITHUB_TOKEN = token;
+  localStorage.setItem('github_token', token);
+  alert('✅ Token guardado. Sincronización habilitada.');
+  return true;
+}
+
+async function sincronizarDesdeGitHub() {
+  if (!GITHUB_TOKEN) {
+    await obtenerTokenGitHub();
+  }
+  
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const contenido = JSON.parse(atob(data.content));
+      localStorage.setItem('clientesFDT', JSON.stringify(contenido));
+      return contenido;
+    } else if (response.status === 404) {
+      return [];
+    }
+  } catch (error) {
+    console.log('Error sincronizando desde GitHub:', error);
+  }
+  return null;
+}
+
+async function sincronizarAGitHub(clientesData) {
+  if (!GITHUB_TOKEN) return false;
+  
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+    
+    // Obtener SHA actual del archivo
+    const getResponse = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    let sha = null;
+    if (getResponse.ok) {
+      const data = await getResponse.json();
+      sha = data.sha;
+    }
+    
+    // Subir el archivo actualizado
+    const putResponse = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `📊 Actualización automática: ${new Date().toLocaleString('es-MX')}`,
+        content: btoa(JSON.stringify(clientesData, null, 2)),
+        sha: sha
+      })
+    });
+    
+    return putResponse.ok;
+  } catch (error) {
+    console.log('Error sincronizando a GitHub:', error);
+    return false;
+  }
+}
+
+async function cargarClientesConSincronizacion() {
+  // Intentar sincronizar desde GitHub primero
+  const datosGitHub = await sincronizarDesdeGitHub();
+  
+  if (datosGitHub !== null) {
+    clientes = datosGitHub;
+  } else {
+    // Si falla, usar localStorage
+    const datos = localStorage.getItem('clientesFDT');
+    if (datos) {
+      clientes = JSON.parse(datos);
+    } else {
+      clientes = [
+        { id: "001", nombre: "David Pérez", telefono: "5551234567", fecha: "2024-07-28", xp: 750, retos: new Array(54).fill(false).map((_, i) => i < 15) },
+        { id: "002", nombre: "María López", telefono: "5559876543", fecha: "2024-06-15", xp: 1200, retos: new Array(54).fill(false).map((_, i) => i < 22) },
+        { id: "003", nombre: "Carlos Gómez", telefono: "5551111111", fecha: "2024-08-01", xp: 200, retos: new Array(54).fill(false).map((_, i) => i < 3) },
+      ];
+      await guardarClientesConSincronizacion(clientes);
+    }
+  }
+  
+  renderizarClientes();
+  actualizarEstadísticas();
+}
+
+async function guardarClientesConSincronizacion(clientesData = clientes) {
+  // Guardar en localStorage
+  localStorage.setItem('clientesFDT', JSON.stringify(clientesData));
+  
+  // Sincronizar a GitHub
+  if (GITHUB_TOKEN) {
+    await sincronizarAGitHub(clientesData);
+  }
+}
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   document.getElementById(tab + '-tab').style.display = 'block';
   
@@ -1110,23 +1245,11 @@ function switchTab(tab) {
 }
 
 function cargarClientes() {
-  const datos = localStorage.getItem('clientesFDT');
-  if (datos) {
-    clientes = JSON.parse(datos);
-  } else {
-    clientes = [
-      { id: "001", nombre: "David Pérez", telefono: "5551234567", fecha: "2024-07-28", xp: 750, retos: new Array(54).fill(false).map((_, i) => i < 15) },
-      { id: "002", nombre: "María López", telefono: "5559876543", fecha: "2024-06-15", xp: 1200, retos: new Array(54).fill(false).map((_, i) => i < 22) },
-      { id: "003", nombre: "Carlos Gómez", telefono: "5551111111", fecha: "2024-08-01", xp: 200, retos: new Array(54).fill(false).map((_, i) => i < 3) },
-    ];
-    guardarClientesLS();
-  }
-  renderizarClientes();
-  actualizarEstadísticas();
+  cargarClientesConSincronizacion();
 }
 
 function guardarClientesLS() {
-  localStorage.setItem('clientesFDT', JSON.stringify(clientes));
+  guardarClientesConSincronizacion();
 }
 
 function actualizarEstadísticas() {
@@ -1204,10 +1327,10 @@ function generarBloques() {
           const totalIdx = idx * 6 + rIdx;
           return `
             <div class="reto-checkbox">
-              <input type="checkbox" id="reto${totalIdx}">
+              <input type="checkbox" id="reto${totalIdx}" onchange="actualizarXPDesdeRetos()">
               <div>
-                <label for="reto${totalIdx}">N${rIdx + 1}</label>
-                <div class="reto-name">${reto}</div>
+                <label for="reto${totalIdx}"><strong>Nivel ${rIdx + 1}</strong> - ${reto}</label>
+                <div class="reto-name">${xpPorReto[totalIdx]} XP</div>
               </div>
             </div>
           `;
@@ -1217,6 +1340,17 @@ function generarBloques() {
   `).join('');
   
   document.getElementById('bloquesContainer').innerHTML = html;
+}
+
+function actualizarXPDesdeRetos() {
+  let xpTotal = 0;
+  for (let i = 0; i < 54; i++) {
+    const checkbox = document.getElementById(`reto${i}`);
+    if (checkbox && checkbox.checked) {
+      xpTotal += xpPorReto[i];
+    }
+  }
+  document.getElementById('clientXP').value = xpTotal;
 }
 
 function mostrarNuevoCliente() {
@@ -1298,6 +1432,21 @@ document.getElementById('modalOverlay').addEventListener('click', (e) => {
   }
 });
 
+function mostrarStatusSync() {
+  if (!GITHUB_TOKEN) {
+    const token = prompt('🔐 Token de GitHub:\nPega tu token personal (ghp_...)');
+    if (token) {
+      GITHUB_TOKEN = token;
+      localStorage.setItem('github_token', token);
+      document.getElementById('syncText').textContent = 'Sincronizado';
+      document.getElementById('syncStatus').style.background = 'rgba(132, 204, 22, 0.3)';
+      alert('✅ Token guardado. Sincronización habilitada.');
+    }
+  } else {
+    alert(`✅ Sincronización activa con GitHub\nRepositorio: ${GITHUB_USER}/${GITHUB_REPO}`);
+  }
+}
+
 function descargarBackup() {
   const datos = JSON.stringify(clientes, null, 2);
   const blob = new Blob([datos], { type: 'application/json' });
@@ -1318,15 +1467,15 @@ function cargarBackup(event) {
   if (!file) return;
   
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       clientes = JSON.parse(e.target.result);
-      guardarClientesLS();
+      await guardarClientesConSincronizacion(clientes);
       renderizarClientes();
       actualizarEstadísticas();
-      alert('Datos restaurados correctamente');
+      alert('✅ Datos restaurados y sincronizados con GitHub');
     } catch (error) {
-      alert('Error al cargar el archivo');
+      alert('❌ Error al cargar el archivo');
     }
   };
   reader.readAsText(file);
@@ -1386,17 +1535,20 @@ function cargarCarnet() {
       <div class="carnet-progress">
         <div class="progress-label">
           <span>XP Actual</span>
-          <span>${cliente.xp} / 8000</span>
+          <span id="carnetXPValue">${cliente.xp}</span> / 8000
         </div>
         <div class="progress-inputs">
-          <input type="number" value="${cliente.xp}" onchange="actualizarXPCarnet(this.value)">
+          <input type="number" id="carnetXPInput" value="${cliente.xp}" readonly>
           <span>/</span>
           <input type="number" value="8000" readonly>
         </div>
         <div class="progress-bar-carnet">
-          <div class="progress-fill-carnet" style="width: ${progreso}%"></div>
+          <div class="progress-fill-carnet" id="carnetProgress" style="width: ${progreso}%"></div>
         </div>
-        <div class="rank-badge-carnet">${rango.emoji} ${rango.name}</div>
+        <div class="rank-badge-carnet">
+          <span id="carnetRankEmoji">${rango.emoji}</span>
+          <span id="carnetRankName">${rango.name}</span>
+        </div>
       </div>
 
       <div class="carnet-bloques">
@@ -1418,10 +1570,13 @@ function cargarCarnet() {
       const xp = xpPorReto[totalIdx];
       
       html += `
-        <div class="carnet-nivel">
+        <div class="carnet-nivel" title="${reto}">
           <div class="carnet-nivel-num">${rIdx + 1}</div>
+          <div class="carnet-nivel-nombre">${reto}</div>
           <div class="carnet-xp">${xp} XP</div>
-          <div class="carnet-check">${completado ? '✓' : '○'}</div>
+          <div class="carnet-check">
+            <input type="checkbox" data-reto-id="${totalIdx}" ${completado ? 'checked' : ''}>
+          </div>
         </div>
       `;
     });
@@ -1436,6 +1591,9 @@ function cargarCarnet() {
       </div>
 
       <div style="margin-top: 24px; display: flex; gap: 8px;">
+        <button class="btn primary" onclick="generarPDFCliente('${cliente.id}')">
+          <i class="ti ti-download"></i> Descargar PDF
+        </button>
         <button class="btn primary" onclick="window.print()">
           <i class="ti ti-printer"></i> Imprimir
         </button>
@@ -1447,6 +1605,36 @@ function cargarCarnet() {
   `;
 
   document.getElementById('carnetView').innerHTML = html;
+
+  // Agregar listeners a los checkboxes para actualizar XP en tiempo real
+  document.querySelectorAll('.carnet-check input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      const cliente = clientes.find(c => c.id === id);
+      const retoIdx = parseInt(checkbox.getAttribute('data-reto-id'));
+      cliente.retos[retoIdx] = checkbox.checked;
+      
+      let xpTotal = 0;
+      cliente.retos.forEach((completed, i) => {
+        if (completed) xpTotal += xpPorReto[i];
+      });
+      cliente.xp = xpTotal;
+      
+      const rango = ranks.find(r => cliente.xp >= r.min && cliente.xp <= r.max);
+      const progreso = Math.min(cliente.xp / 8000 * 100, 100);
+      
+      // Actualizar vista del carnet
+      document.getElementById('carnetXPValue').textContent = cliente.xp;
+      document.getElementById('carnetXPInput').value = cliente.xp;
+      document.getElementById('carnetProgress').style.width = progreso + '%';
+      document.getElementById('carnetRankEmoji').textContent = rango.emoji;
+      document.getElementById('carnetRankName').textContent = rango.name;
+      
+      // Guardar y actualizar admin
+      guardarClientesLS();
+      actualizarEstadísticas();
+      renderizarClientes(); // Actualizar la tarjeta en admin
+    });
+  });
 }
 
 function actualizarXPCarnet(xp) {
@@ -1470,9 +1658,121 @@ function generarQRCarnet(id) {
   });
 }
 
-function generarQR(id) {
-  const url = `${window.location.href.split('?')[0]}?ver=${id}`;
-  alert(`QR para ${id}:\n${url}\n\nEste link abre la vista pública del cliente.`);
+function generarPDFCliente(id) {
+  const cliente = clientes.find(c => c.id === id);
+  if (!cliente) return;
+
+  const rango = ranks.find(r => cliente.xp >= r.min && cliente.xp <= r.max);
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mi Carnet FDT - ${cliente.nombre}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; color: #333; }
+    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #FF6B35; padding-bottom: 10px; }
+    .logo { font-size: 24px; font-weight: bold; color: #FF6B35; }
+    .client-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 12px; }
+    .info-item { border-bottom: 1px solid #ddd; padding: 8px 0; }
+    .info-label { font-weight: bold; color: #666; font-size: 10px; }
+    .info-value { font-weight: 600; }
+    .progress-section { margin-bottom: 20px; }
+    .progress-label { font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+    .progress-bar { width: 100%; height: 10px; background: #e5e5e5; border-radius: 5px; overflow: hidden; margin-bottom: 5px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #FF6B35, #84CC16); width: ${Math.min(cliente.xp / 8000 * 100, 100)}%; }
+    .rank { display: inline-block; background: #F59E0B; color: white; padding: 8px 12px; border-radius: 12px; font-weight: bold; font-size: 12px; }
+    .bloques { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    .bloque { border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+    .bloque-header { padding: 8px 12px; color: white; font-weight: bold; font-size: 12px; }
+    .bloque-retos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 8px; background: #f9f9f9; }
+    .reto { padding: 8px; border: 1px solid #ddd; background: white; font-size: 10px; text-align: center; }
+    .reto-nivel { font-weight: bold; color: #FF6B35; }
+    .reto-nombre { font-size: 9px; color: #666; margin: 2px 0; }
+    .reto-xp { font-size: 9px; color: #999; }
+    .reto-check { margin-top: 4px; }
+    .checkbox { width: 16px; height: 16px; cursor: pointer; }
+    .footer { text-align: center; font-size: 10px; color: #999; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">.FDT</div>
+    <div style="font-size: 14px; font-weight: bold; margin-top: 5px;">Mi Carnet de Fidelización</div>
+  </div>
+
+  <div class="client-info">
+    <div class="info-item">
+      <div class="info-label">Nombre</div>
+      <div class="info-value">${cliente.nombre}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">ID Cliente</div>
+      <div class="info-value">${cliente.id}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Teléfono</div>
+      <div class="info-value">${cliente.telefono}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Inscripción</div>
+      <div class="info-value">${cliente.fecha}</div>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">Mis Puntos XP</div>
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 11px;">
+      <span><strong>${cliente.xp}</strong> / 8000 XP</span>
+      <span class="rank">${rango.emoji} ${rango.name}</span>
+    </div>
+  </div>
+
+  <div class="bloques">
+    ${bloques.map((bloque, idx) => `
+      <div class="bloque">
+        <div class="bloque-header" style="background: ${bloque.color};">
+          ${bloque.nombre}
+        </div>
+        <div class="bloque-retos">
+          ${bloque.retos.map((reto, rIdx) => {
+            const totalIdx = idx * 6 + rIdx;
+            const completado = cliente.retos[totalIdx];
+            const xp = xpPorReto[totalIdx];
+            return `
+              <div class="reto">
+                <div class="reto-nivel">N${rIdx + 1}</div>
+                <div class="reto-nombre">${reto}</div>
+                <div class="reto-xp">${xp} XP</div>
+                <div class="reto-check">
+                  <input type="checkbox" class="checkbox" ${completado ? 'checked' : ''} disabled>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="footer">
+    <p>Completa tus retos y suma puntos para desbloquear recompensas exclusivas.</p>
+    <p>Documento generado el ${new Date().toLocaleDateString('es-MX')}</p>
+  </div>
+</body>
+</html>
+  `;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `carnet-${cliente.nombre}-${cliente.id}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function compartirCarnet(id) {
@@ -1561,16 +1861,27 @@ function mostrarVistaPublica() {
   `;
 }
 
-window.addEventListener('load', () => {
-  cargarClientes();
-  
+window.addEventListener('load', async () => {
+  // Verificar si es vista pública
   const params = new URLSearchParams(window.location.search);
   if (params.has('ver')) {
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-    document.querySelector('.tab:nth-child(3)').classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    // Vista pública - sincronizar y mostrar
+    document.querySelectorAll('.tab').forEach(el => el.style.display = 'none');
+    document.querySelector('header').style.display = 'none';
+    document.getElementById('admin-tab').style.display = 'none';
+    document.getElementById('carnet-tab').style.display = 'none';
+    
+    // Sincronizar desde GitHub
+    const datosGitHub = await sincronizarDesdeGitHub();
+    if (datosGitHub !== null) {
+      clientes = datosGitHub;
+    }
+    
     document.getElementById('publica-tab').style.display = 'block';
     mostrarVistaPublica();
+  } else {
+    // Vista admin - cargar normalmente
+    await cargarClientes();
   }
 });
 </script>
