@@ -1114,26 +1114,25 @@ const xpPorReto = [20, 40, 80, 60, 50, 150, 30, 50, 80, 120, 180, 300, 30, 60, 1
 const GITHUB_USER = 'daorcu';
 const GITHUB_REPO = 'carnet-fdt';
 const GITHUB_FILE = 'clientes.json';
-const GITHUB_BRANCH = 'main';
 
 let GITHUB_TOKEN = localStorage.getItem('github_token') || null;
+let syncEnabled = false;
 
 async function obtenerTokenGitHub() {
-  if (GITHUB_TOKEN) return true;
-  
-  const token = prompt('🔐 Token de GitHub requerido:\nPega tu token personal (ghp_...)');
-  if (!token) return false;
-  
-  GITHUB_TOKEN = token;
-  localStorage.setItem('github_token', token);
-  alert('✅ Token guardado. Sincronización habilitada.');
-  return true;
+  const token = prompt('🔐 Token de GitHub (ghp_...):\nPuedes dejarlo en blanco para usar solo localStorage');
+  if (token && token.startsWith('ghp_')) {
+    GITHUB_TOKEN = token;
+    localStorage.setItem('github_token', token);
+    syncEnabled = true;
+    alert('✅ Sincronización con GitHub habilitada');
+    cargarClientesConSincronizacion();
+  } else if (token) {
+    alert('❌ Token inválido. Debe empezar con ghp_');
+  }
 }
 
 async function sincronizarDesdeGitHub() {
-  if (!GITHUB_TOKEN) {
-    await obtenerTokenGitHub();
-  }
+  if (!GITHUB_TOKEN || !syncEnabled) return null;
   
   try {
     const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
@@ -1146,11 +1145,7 @@ async function sincronizarDesdeGitHub() {
     
     if (response.ok) {
       const data = await response.json();
-      const contenido = JSON.parse(atob(data.content));
-      localStorage.setItem('clientesFDT', JSON.stringify(contenido));
-      return contenido;
-    } else if (response.status === 404) {
-      return [];
+      return JSON.parse(atob(data.content));
     }
   } catch (error) {
     console.log('Error sincronizando desde GitHub:', error);
@@ -1159,12 +1154,11 @@ async function sincronizarDesdeGitHub() {
 }
 
 async function sincronizarAGitHub(clientesData) {
-  if (!GITHUB_TOKEN) return false;
+  if (!GITHUB_TOKEN || !syncEnabled) return false;
   
   try {
     const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
     
-    // Obtener SHA actual del archivo
     const getResponse = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
@@ -1178,7 +1172,6 @@ async function sincronizarAGitHub(clientesData) {
       sha = data.sha;
     }
     
-    // Subir el archivo actualizado
     const putResponse = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -1196,33 +1189,56 @@ async function sincronizarAGitHub(clientesData) {
     return putResponse.ok;
   } catch (error) {
     console.log('Error sincronizando a GitHub:', error);
-    return false;
   }
+  return false;
 }
 
 async function cargarClientesConSincronizacion() {
-  // Intentar sincronizar desde GitHub primero
-  const datosGitHub = await sincronizarDesdeGitHub();
-  
-  if (datosGitHub !== null) {
-    clientes = datosGitHub;
-  } else {
-    // Si falla, usar localStorage
-    const datos = localStorage.getItem('clientesFDT');
-    if (datos) {
-      clientes = JSON.parse(datos);
-    } else {
-      clientes = [
-        { id: "001", nombre: "David Pérez", telefono: "5551234567", fecha: "2024-07-28", xp: 750, retos: new Array(54).fill(false).map((_, i) => i < 15) },
-        { id: "002", nombre: "María López", telefono: "5559876543", fecha: "2024-06-15", xp: 1200, retos: new Array(54).fill(false).map((_, i) => i < 22) },
-        { id: "003", nombre: "Carlos Gómez", telefono: "5551111111", fecha: "2024-08-01", xp: 200, retos: new Array(54).fill(false).map((_, i) => i < 3) },
-      ];
-      await guardarClientesConSincronizacion(clientes);
+  try {
+    // Intentar sincronizar desde GitHub si hay token
+    if (GITHUB_TOKEN) {
+      syncEnabled = true;
+      const datosGitHub = await sincronizarDesdeGitHub();
+      if (datosGitHub !== null && Array.isArray(datosGitHub)) {
+        clientes = datosGitHub;
+        localStorage.setItem('clientesFDT', JSON.stringify(clientes));
+        renderizarClientes();
+        actualizarEstadísticas();
+        return;
+      }
     }
+  } catch (error) {
+    console.log('Error en sincronización:', error);
+  }
+  
+  // Fallback a localStorage
+  const datos = localStorage.getItem('clientesFDT');
+  if (datos) {
+    try {
+      clientes = JSON.parse(datos);
+    } catch (e) {
+      clientes = [];
+    }
+  } else {
+    clientes = [
+      { id: "001", nombre: "David Pérez", telefono: "5551234567", fecha: "2024-07-28", xp: 750, retos: new Array(54).fill(false).map((_, i) => i < 15) },
+      { id: "002", nombre: "María López", telefono: "5559876543", fecha: "2024-06-15", xp: 1200, retos: new Array(54).fill(false).map((_, i) => i < 22) },
+      { id: "003", nombre: "Carlos Gómez", telefono: "5551111111", fecha: "2024-08-01", xp: 200, retos: new Array(54).fill(false).map((_, i) => i < 3) },
+    ];
   }
   
   renderizarClientes();
   actualizarEstadísticas();
+}
+
+async function guardarClientesConSincronizacion(clientesData = clientes) {
+  // Guardar en localStorage siempre
+  localStorage.setItem('clientesFDT', JSON.stringify(clientesData));
+  
+  // Sincronizar a GitHub si está habilitado
+  if (GITHUB_TOKEN && syncEnabled) {
+    await sincronizarAGitHub(clientesData);
+  }
 }
 
 async function guardarClientesConSincronizacion(clientesData = clientes) {
@@ -1434,14 +1450,7 @@ document.getElementById('modalOverlay').addEventListener('click', (e) => {
 
 function mostrarStatusSync() {
   if (!GITHUB_TOKEN) {
-    const token = prompt('🔐 Token de GitHub:\nPega tu token personal (ghp_...)');
-    if (token) {
-      GITHUB_TOKEN = token;
-      localStorage.setItem('github_token', token);
-      document.getElementById('syncText').textContent = 'Sincronizado';
-      document.getElementById('syncStatus').style.background = 'rgba(132, 204, 22, 0.3)';
-      alert('✅ Token guardado. Sincronización habilitada.');
-    }
+    obtenerTokenGitHub();
   } else {
     alert(`✅ Sincronización activa con GitHub\nRepositorio: ${GITHUB_USER}/${GITHUB_REPO}`);
   }
@@ -1862,26 +1871,21 @@ function mostrarVistaPublica() {
 }
 
 window.addEventListener('load', async () => {
-  // Verificar si es vista pública
   const params = new URLSearchParams(window.location.search);
   if (params.has('ver')) {
-    // Vista pública - sincronizar y mostrar
+    // Vista pública - ocultar admin
     document.querySelectorAll('.tab').forEach(el => el.style.display = 'none');
     document.querySelector('header').style.display = 'none';
     document.getElementById('admin-tab').style.display = 'none';
     document.getElementById('carnet-tab').style.display = 'none';
-    
-    // Sincronizar desde GitHub
-    const datosGitHub = await sincronizarDesdeGitHub();
-    if (datosGitHub !== null) {
-      clientes = datosGitHub;
-    }
-    
     document.getElementById('publica-tab').style.display = 'block';
+    
+    // Cargar datos (con o sin GitHub)
+    await cargarClientesConSincronizacion();
     mostrarVistaPublica();
   } else {
-    // Vista admin - cargar normalmente
-    await cargarClientes();
+    // Vista admin
+    await cargarClientesConSincronizacion();
   }
 });
 </script>
