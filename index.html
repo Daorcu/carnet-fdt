@@ -406,30 +406,22 @@ function detectarYCargarCliente() {
             window.location.href = window.location.pathname;
         }
     } else {
-        // Restaurar sesión si existe
-        const clienteEnSession = sessionStorage.getItem('clienteViendose');
+        // Sin ?ver= parámetro → Es ADMIN
         const adminEnSession = sessionStorage.getItem('adminLogueado');
         
-        if (clienteEnSession) {
-            const cliente = clientes.find(c => c.id.toUpperCase() === clienteEnSession.toUpperCase());
-            if (cliente) {
-                clienteViendose = cliente;
-                document.getElementById('inicio').style.display = 'none';
-                document.getElementById('cliente').classList.add('active');
-                mostrarCliente();
-                return;
-            }
-        }
-        
         if (adminEnSession === 'true') {
-            document.getElementById('inicio').style.display = 'none';
+            // Ya está logueado como admin, mostrar panel
+            document.getElementById('cliente').style.display = 'none';
             document.getElementById('admin').classList.add('active');
             mostrarAdmin();
-            return;
+        } else {
+            // Mostrar modal de contraseña
+            document.getElementById('cliente').style.display = 'none';
+            document.getElementById('admin').classList.add('active');
+            document.getElementById('modal-password').classList.add('active');
+            document.getElementById('campo-password').value = '';
+            document.getElementById('campo-password').focus();
         }
-        
-        // Si no hay sesión, mostrar pantalla de inicio
-        document.getElementById('inicio').style.display = 'flex';
     }
 }
 
@@ -442,10 +434,8 @@ function guardarDatos() {
 function volverInicio() {
     sessionStorage.removeItem('clienteViendose');
     sessionStorage.removeItem('adminLogueado');
-    document.getElementById('inicio').style.display = 'flex';
-    document.getElementById('admin').classList.remove('active');
-    document.getElementById('cliente').classList.remove('active');
-    cerrarModal();
+    // Redirigir a la URL base (sin ?ver=)
+    window.location.href = window.location.pathname;
 }
 
 function solicitarPassword() {
