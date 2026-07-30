@@ -296,12 +296,8 @@
     <div class="modal-box">
         <div class="modal-title">Ingresa tu ID</div>
         <div class="form-group">
-            <label style="font-size: 12px; color: #999; margin-bottom: 12px;">Ej: FDT1001</label>
+            <label style="font-size: 12px; color: #999; margin-bottom: 12px;">Ej: FDT1014</label>
             <input type="text" id="campo-cliente-id" placeholder="FDT..." onkeypress="if(event.key==='Enter') abrirCliente()" style="text-transform: uppercase;">
-        </div>
-        <div style="font-size: 12px; color: #999; padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 16px;">
-            <strong>IDs disponibles:</strong><br>
-            <span id="ids-disponibles">Cargando...</span>
         </div>
         <div class="modal-actions">
             <button class="btn" onclick="volverInicio()">Cancelar</button>
@@ -336,7 +332,7 @@ const BLOQUES = [
 
 const XP_RETOS = [20,40,80,60,50,150, 30,50,80,120,180,300, 30,60,120,180,280,450, 30,50,120,130,150,250, 30,50,100,120,180,300, 30,80,150,250,400,600, 30,50,100,150,250,400, 80,120,180,250,320,500, 40,60,100,120,180,300];
 
-const PASSWORD_ADMIN = "FDT2024";
+const PASSWORD_ADMIN = "PZ4tV_XxtAl6JK2g";
 
 let clientes = [];
 let clienteEnEdicion = null;
@@ -348,15 +344,54 @@ function cargarDatos() {
         if (datos) {
             clientes = JSON.parse(datos);
         } else {
-            clientes = [
-                {id:"FDT1001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos: Array(54).fill(false).map((_, i) => i < 15)},
-                {id:"FDT1002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos: Array(54).fill(false).map((_, i) => i < 22)},
-                {id:"FDT1004", nombre:"Pricila Martinez", telefono:"5551111111", fecha:"2024-07-29", xp:456, retos: Array(54).fill(false).map((_, i) => i < 8)}
-            ];
+            clientes = [];
             guardarDatos();
         }
     } catch(e) {
         clientes = [];
+    }
+    
+    // Detectar si viene con ?ver=ID en la URL
+    const url = new URLSearchParams(window.location.search);
+    if (url.has('ver')) {
+        const idCliente = url.get('ver').toUpperCase();
+        const cliente = clientes.find(c => c.id.toUpperCase() === idCliente);
+        
+        if (cliente) {
+            clienteViendose = cliente;
+            sessionStorage.setItem('clienteViendose', idCliente);
+            document.getElementById('inicio').style.display = 'none';
+            document.getElementById('cliente').classList.add('active');
+            mostrarCliente();
+        } else {
+            alert('❌ Cliente no encontrado: ' + idCliente);
+            window.location.href = window.location.pathname;
+        }
+    } else {
+        // Restaurar sesión si existe
+        const clienteEnSession = sessionStorage.getItem('clienteViendose');
+        const adminEnSession = sessionStorage.getItem('adminLogueado');
+        
+        if (clienteEnSession) {
+            const cliente = clientes.find(c => c.id.toUpperCase() === clienteEnSession.toUpperCase());
+            if (cliente) {
+                clienteViendose = cliente;
+                document.getElementById('inicio').style.display = 'none';
+                document.getElementById('cliente').classList.add('active');
+                mostrarCliente();
+                return;
+            }
+        }
+        
+        if (adminEnSession === 'true') {
+            document.getElementById('inicio').style.display = 'none';
+            document.getElementById('admin').classList.add('active');
+            mostrarAdmin();
+            return;
+        }
+        
+        // Si no hay sesión, mostrar pantalla de inicio
+        document.getElementById('inicio').style.display = 'flex';
     }
 }
 
@@ -365,6 +400,8 @@ function guardarDatos() {
 }
 
 function volverInicio() {
+    sessionStorage.removeItem('clienteViendose');
+    sessionStorage.removeItem('adminLogueado');
     document.getElementById('inicio').style.display = 'flex';
     document.getElementById('admin').classList.remove('active');
     document.getElementById('cliente').classList.remove('active');
@@ -380,6 +417,7 @@ function solicitarPassword() {
 function verificarPassword() {
     const pass = document.getElementById('campo-password').value;
     if (pass === PASSWORD_ADMIN) {
+        sessionStorage.setItem('adminLogueado', 'true');
         document.getElementById('inicio').style.display = 'none';
         document.getElementById('admin').classList.add('active');
         mostrarAdmin();
@@ -397,10 +435,6 @@ function irCliente() {
     document.getElementById('modal-cliente-id').classList.add('active');
     document.getElementById('campo-cliente-id').value = '';
     document.getElementById('campo-cliente-id').focus();
-    
-    // Mostrar IDs disponibles
-    const idsDisponibles = clientes.map(c => `<strong>${c.id}</strong>`).join(', ');
-    document.getElementById('ids-disponibles').innerHTML = idsDisponibles || 'Ninguno disponible';
 }
 
 function abrirCliente() {
@@ -408,11 +442,12 @@ function abrirCliente() {
     const cliente = clientes.find(c => c.id.toUpperCase() === id);
     
     if (!cliente) {
-        alert('❌ Cliente no encontrado\n\nIDs disponibles:\n' + clientes.map(c => c.id).join('\n'));
+        alert('❌ Cliente no encontrado');
         return;
     }
 
     clienteViendose = cliente;
+    sessionStorage.setItem('clienteViendose', id);
     document.getElementById('inicio').style.display = 'none';
     document.getElementById('cliente').classList.add('active');
     mostrarCliente();
@@ -632,13 +667,18 @@ function cerrarVistaRetos() {
 
 function guardarCliente() {
     const nombre = document.getElementById('campo-nombre').value.trim();
-    const id = document.getElementById('campo-id').value.trim();
+    const id = document.getElementById('campo-id').value.trim().toUpperCase();
     const telefono = document.getElementById('campo-telefono').value.trim();
     const fecha = document.getElementById('campo-fecha').value;
     const xp = parseInt(document.getElementById('campo-xp').value) || 0;
 
     if (!nombre || !id) {
         alert('⚠️ Nombre e ID son requeridos');
+        return;
+    }
+
+    if (!id.startsWith('FDT')) {
+        alert('⚠️ El ID debe empezar con FDT (ej: FDT1014)');
         return;
     }
 
