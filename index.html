@@ -265,8 +265,7 @@
             <input type="password" id="campo-password" placeholder="Ingresa contraseña" onkeypress="if(event.key==='Enter') verificarPassword()">
         </div>
         <div class="modal-actions">
-            <button class="btn" onclick="cerrarPassword()">Cancelar</button>
-            <button class="btn primary" onclick="verificarPassword()">Entrar</button>
+            <button class="btn primary" onclick="verificarPassword()" style="width: 100%;">Entrar</button>
         </div>
     </div>
 </div>
@@ -402,11 +401,12 @@ function detectarYCargarCliente() {
             // Ya está logueado como admin, mostrar panel
             document.getElementById('cliente').style.display = 'none';
             document.getElementById('admin').classList.add('active');
+            document.getElementById('admin').style.display = 'flex';
             mostrarAdmin();
         } else {
-            // Mostrar modal de contraseña
+            // NO mostrar el admin panel - solo el modal de contraseña
             document.getElementById('cliente').style.display = 'none';
-            document.getElementById('admin').classList.add('active');
+            document.getElementById('admin').style.display = 'none'; // Mantener oculto hasta que ingrese password
             document.getElementById('modal-password').classList.add('active');
             document.getElementById('campo-password').value = '';
             document.getElementById('campo-password').focus();
@@ -437,6 +437,7 @@ function verificarPassword() {
     const pass = document.getElementById('campo-password').value;
     if (pass === PASSWORD_ADMIN) {
         sessionStorage.setItem('adminLogueado', 'true');
+        document.getElementById('admin').style.display = 'flex'; // Mostrar panel
         document.getElementById('admin').classList.add('active');
         mostrarAdmin();
         cerrarPassword();
