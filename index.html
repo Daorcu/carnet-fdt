@@ -354,17 +354,25 @@ function cargarDatos() {
     // Detectar si viene con ?ver=ID en la URL
     const url = new URLSearchParams(window.location.search);
     if (url.has('ver')) {
-        const idCliente = url.get('ver').toUpperCase();
-        const cliente = clientes.find(c => c.id.toUpperCase() === idCliente);
+        const idCliente = url.get('ver').toUpperCase().trim();
+        
+        console.log('🔍 Buscando cliente:', idCliente);
+        console.log('📊 Clientes disponibles:', clientes.map(c => c.id));
+        
+        const cliente = clientes.find(c => c.id.toUpperCase().trim() === idCliente);
         
         if (cliente) {
+            console.log('✅ Cliente encontrado:', cliente);
             clienteViendose = cliente;
-            sessionStorage.setItem('clienteViendose', idCliente);
+            sessionStorage.setItem('clienteViendose', cliente.id);
             document.getElementById('inicio').style.display = 'none';
             document.getElementById('cliente').classList.add('active');
             mostrarCliente();
         } else {
-            alert('❌ Cliente no encontrado: ' + idCliente);
+            console.log('❌ Cliente NO encontrado');
+            console.log('ID buscado:', idCliente);
+            console.log('IDs en sistema:', clientes.map(c => c.id.toUpperCase()));
+            alert('❌ Cliente no encontrado: ' + idCliente + '\n\nClientes disponibles:\n' + (clientes.length > 0 ? clientes.map(c => c.id).join('\n') : 'Ninguno'));
             window.location.href = window.location.pathname;
         }
     } else {
