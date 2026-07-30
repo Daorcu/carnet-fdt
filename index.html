@@ -101,6 +101,63 @@
         .modal-actions button { flex: 1; padding: 12px; }
         
         .hidden { display: none; }
+        
+        @media (max-width: 768px) {
+            body { font-size: 14px; }
+            header { flex-direction: column; gap: 12px; text-align: center; padding: 16px; }
+            header h1 { font-size: 20px; }
+            .header-actions { width: 100%; flex-wrap: wrap; }
+            .btn { padding: 8px 12px; font-size: 12px; }
+            .admin-content { padding: 16px; }
+            .stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .search { flex-direction: column; }
+            .search input { font-size: 14px; }
+            .clients { grid-template-columns: 1fr; }
+            .card { padding: 16px; }
+            .modal-box { width: 95%; max-height: 90vh; padding: 20px; max-width: 100%; }
+            .modal-title { font-size: 16px; }
+            .form-group { margin-bottom: 12px; }
+            .form-group input { padding: 8px; font-size: 14px; }
+            
+            /* Retos modal responsive */
+            #modal-retos-temp { padding: 10px 0 !important; }
+            #modal-retos-temp .modal-box { max-width: 98%; width: 98%; padding: 16px; }
+            #retos-contenedor { padding: 0 !important; }
+            #retos-contenedor > div { margin-bottom: 16px !important; }
+            #retos-contenedor label { grid-template-columns: 1fr !important; align-items: flex-start !important; padding: 10px 8px !important; }
+            #retos-contenedor input[type="checkbox"] { margin-bottom: 0; }
+            .retos-grid-mobile { grid-template-columns: 1fr !important; gap: 6px !important; padding: 8px !important; }
+            
+            /* Cliente view responsive */
+            .cliente-header { padding: 20px 16px; }
+            .cliente-name { font-size: 24px; }
+            .cliente-avatar { width: 60px; height: 60px; font-size: 28px; }
+            .cliente-stats { grid-template-columns: 1fr; }
+            .cliente-content { padding: 16px; }
+            .bloques { grid-template-columns: 1fr; }
+            .reto-item { font-size: 11px; padding: 10px 8px; }
+            
+            .inicio-box { padding: 40px 24px; }
+            .inicio-title { font-size: 24px; }
+            .inicio-subtitle { font-size: 13px; }
+            .btn-option { padding: 14px 20px; font-size: 14px; }
+            
+            .cliente-back { bottom: 20px; right: 20px; }
+            .cliente-back .btn { padding: 10px 16px; font-size: 12px; }
+        }
+        
+        @media (max-width: 480px) {
+            .stat-card { padding: 12px; }
+            .stat-num { font-size: 20px; }
+            .stat-label { font-size: 10px; }
+            .card-name { font-size: 16px; }
+            .card-stat-num { font-size: 14px; }
+            .card-actions { flex-direction: column; }
+            .cliente-stat-num { font-size: 18px; }
+            .progress-label { font-size: 11px; }
+            header h1 { font-size: 18px; }
+            .modal-box { padding: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -239,7 +296,12 @@
     <div class="modal-box">
         <div class="modal-title">Ingresa tu ID</div>
         <div class="form-group">
-            <input type="text" id="campo-cliente-id" placeholder="Ej: 001" onkeypress="if(event.key==='Enter') abrirCliente()">
+            <label style="font-size: 12px; color: #999; margin-bottom: 12px;">Ej: FDT1001</label>
+            <input type="text" id="campo-cliente-id" placeholder="FDT..." onkeypress="if(event.key==='Enter') abrirCliente()" style="text-transform: uppercase;">
+        </div>
+        <div style="font-size: 12px; color: #999; padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 16px;">
+            <strong>IDs disponibles:</strong><br>
+            <span id="ids-disponibles">Cargando...</span>
         </div>
         <div class="modal-actions">
             <button class="btn" onclick="volverInicio()">Cancelar</button>
@@ -287,9 +349,9 @@ function cargarDatos() {
             clientes = JSON.parse(datos);
         } else {
             clientes = [
-                {id:"001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos: Array(54).fill(false).map((_, i) => i < 15)},
-                {id:"002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos: Array(54).fill(false).map((_, i) => i < 22)},
-                {id:"003", nombre:"Anamari Romero", telefono:"5551111111", fecha:"2024-07-29", xp:250, retos: Array(54).fill(false).map((_, i) => i < 5)}
+                {id:"FDT1001", nombre:"David Pérez", telefono:"5551234567", fecha:"2024-07-28", xp:750, retos: Array(54).fill(false).map((_, i) => i < 15)},
+                {id:"FDT1002", nombre:"María López", telefono:"5559876543", fecha:"2024-06-15", xp:1200, retos: Array(54).fill(false).map((_, i) => i < 22)},
+                {id:"FDT1004", nombre:"Pricila Martinez", telefono:"5551111111", fecha:"2024-07-29", xp:456, retos: Array(54).fill(false).map((_, i) => i < 8)}
             ];
             guardarDatos();
         }
@@ -335,14 +397,18 @@ function irCliente() {
     document.getElementById('modal-cliente-id').classList.add('active');
     document.getElementById('campo-cliente-id').value = '';
     document.getElementById('campo-cliente-id').focus();
+    
+    // Mostrar IDs disponibles
+    const idsDisponibles = clientes.map(c => `<strong>${c.id}</strong>`).join(', ');
+    document.getElementById('ids-disponibles').innerHTML = idsDisponibles || 'Ninguno disponible';
 }
 
 function abrirCliente() {
-    const id = document.getElementById('campo-cliente-id').value.trim();
-    const cliente = clientes.find(c => c.id === id);
+    const id = document.getElementById('campo-cliente-id').value.trim().toUpperCase();
+    const cliente = clientes.find(c => c.id.toUpperCase() === id);
     
     if (!cliente) {
-        alert('❌ Cliente no encontrado');
+        alert('❌ Cliente no encontrado\n\nIDs disponibles:\n' + clientes.map(c => c.id).join('\n'));
         return;
     }
 
@@ -488,7 +554,7 @@ function abrirVistaRetos(id) {
     BLOQUES.forEach((bloque, idx) => {
         retosHtml += `<div style="margin-bottom:20px;background:white;border:1px solid #eee;border-radius:8px;overflow:hidden;">
             <div style="background:${bloque.color};color:white;padding:12px;font-weight:600;">${bloque.icon} ${bloque.nombre}</div>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px;">
+            <div class="retos-grid-mobile" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px;padding:12px;">
         `;
         
         bloque.retos.forEach((reto, rIdx) => {
@@ -497,9 +563,9 @@ function abrirVistaRetos(id) {
             const xp = XP_RETOS[totalIdx];
             
             retosHtml += `
-                <label style="display:flex;align-items:center;padding:12px;background:${completado?'#f0f0f0':'white'};border:1px solid #ddd;border-radius:6px;cursor:pointer;user-select:none;">
-                    <input type="checkbox" data-idx="${totalIdx}" ${completado ? 'checked' : ''} onchange="actualizarRetos()" style="margin-right:8px;">
-                    <div style="flex:1;">
+                <label style="display:flex;flex-direction:column;align-items:flex-start;padding:12px;background:${completado?'#f0f0f0':'white'};border:1px solid #ddd;border-radius:6px;cursor:pointer;user-select:none;gap:8px;">
+                    <input type="checkbox" data-idx="${totalIdx}" ${completado ? 'checked' : ''} onchange="actualizarRetos()" style="width:18px;height:18px;cursor:pointer;">
+                    <div style="flex:1;width:100%;">
                         <div style="font-weight:600;font-size:13px;">${reto}</div>
                         <div style="font-size:11px;color:#999;margin-top:4px;">${xp} XP</div>
                     </div>
