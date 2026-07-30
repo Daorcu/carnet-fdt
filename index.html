@@ -338,6 +338,16 @@ let clientes = [];
 let clienteEnEdicion = null;
 let clienteViendose = null;
 
+// Limpiar datos viejos (versiones anteriores a v5.4)
+(function limpiarDatosViejos() {
+    const versionVieja = localStorage.getItem('versionCarnet');
+    if (versionVieja !== 'v5.4') {
+        console.log('🧹 Limpiando datos de versión vieja...');
+        localStorage.removeItem('clientesFDT');
+        localStorage.setItem('versionCarnet', 'v5.4');
+    }
+})();
+
 function cargarDatos() {
     try {
         const datos = localStorage.getItem('clientesFDT');
