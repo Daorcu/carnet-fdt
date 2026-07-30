@@ -344,13 +344,43 @@ function cargarDatos() {
         if (datos) {
             clientes = JSON.parse(datos);
         } else {
-            clientes = [];
-            guardarDatos();
+            // Intenta cargar desde GitHub (si existe clientes.json)
+            cargarDesdeGitHub();
+            return;
         }
     } catch(e) {
         clientes = [];
     }
     
+    // Detectar si viene con ?ver=ID en la URL
+    detectarYCargarCliente();
+}
+
+function cargarDesdeGitHub() {
+    // URL del archivo JSON en GitHub (rama main)
+    const urlGitHub = 'https://raw.githubusercontent.com/daorcu/carnet-fdt/main/clientes.json';
+    
+    fetch(urlGitHub)
+        .then(response => {
+            if (response.ok) return response.json();
+            throw new Error('No existe clientes.json en GitHub');
+        })
+        .then(datos => {
+            if (Array.isArray(datos)) {
+                clientes = datos;
+                localStorage.setItem('clientesFDT', JSON.stringify(clientes));
+                console.log('✅ Datos cargados desde GitHub:', clientes);
+                detectarYCargarCliente();
+            }
+        })
+        .catch(error => {
+            console.log('ℹ️ No se encontró clientes.json en GitHub:', error.message);
+            clientes = [];
+            detectarYCargarCliente();
+        });
+}
+
+function detectarYCargarCliente() {
     // Detectar si viene con ?ver=ID en la URL
     const url = new URLSearchParams(window.location.search);
     if (url.has('ver')) {
@@ -405,6 +435,8 @@ function cargarDatos() {
 
 function guardarDatos() {
     localStorage.setItem('clientesFDT', JSON.stringify(clientes));
+    console.log('💾 Datos guardados en localStorage');
+    console.log('📤 Para sincronizar en otros dispositivos, descarga el JSON y sube a GitHub como clientes.json');
 }
 
 function volverInicio() {
@@ -724,9 +756,10 @@ function descargarJSON() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'carnet-fdt-' + new Date().toISOString().split('T')[0] + '.json';
+    a.download = 'clientes.json';
     a.click();
     URL.revokeObjectURL(url);
+    alert('✅ Archivo descargado: clientes.json\n\n📤 Para sincronizar en otros dispositivos:\n1. Ve a github.com/daorcu/carnet-fdt\n2. Sube este archivo como clientes.json en el repo\n3. Listo, todos los dispositivos lo verán');
 }
 
 function cargarJSON(e) {
