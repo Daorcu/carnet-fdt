@@ -13,19 +13,6 @@
         body { font-family: 'Work Sans', sans-serif; background: #f5f7fa; color: #333; }
         .app { min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* PANTALLA INICIAL */
-        .inicio { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .inicio-box { background: white; padding: 60px 40px; border-radius: 16px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .inicio-logo { font-size: 48px; margin-bottom: 30px; }
-        .inicio-title { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
-        .inicio-subtitle { font-size: 14px; color: #999; margin-bottom: 40px; }
-        .inicio-buttons { display: flex; flex-direction: column; gap: 12px; }
-        .btn-option { padding: 16px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 16px; font-family: 'Work Sans', sans-serif; transition: all 0.3s; }
-        .btn-cliente { background: #667eea; color: white; }
-        .btn-cliente:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3); }
-        .btn-admin { background: white; color: #667eea; border: 2px solid #667eea; }
-        .btn-admin:hover { background: #f5f7fa; transform: translateY(-2px); }
-
         /* ADMIN PANEL */
         .admin { display: none; flex: 1; }
         .admin.active { display: flex; flex-direction: column; }
@@ -114,10 +101,11 @@
             .search input { font-size: 14px; }
             .clients { grid-template-columns: 1fr; }
             .card { padding: 16px; }
-            .modal-box { width: 95%; max-height: 90vh; padding: 20px; max-width: 100%; }
+            .modal-box { width: 90%; max-height: 85vh; padding: 20px; max-width: 400px; }
             .modal-title { font-size: 16px; }
             .form-group { margin-bottom: 12px; }
             .form-group input { padding: 8px; font-size: 14px; }
+            .modal { padding: 20px; }
             
             /* Retos modal responsive */
             #modal-retos-temp { padding: 10px 0 !important; }
@@ -137,11 +125,6 @@
             .bloques { grid-template-columns: 1fr; }
             .reto-item { font-size: 11px; padding: 10px 8px; }
             
-            .inicio-box { padding: 40px 24px; }
-            .inicio-title { font-size: 24px; }
-            .inicio-subtitle { font-size: 13px; }
-            .btn-option { padding: 14px 20px; font-size: 14px; }
-            
             .cliente-back { bottom: 20px; right: 20px; }
             .cliente-back .btn { padding: 10px 16px; font-size: 12px; }
         }
@@ -156,7 +139,20 @@
             .cliente-stat-num { font-size: 18px; }
             .progress-label { font-size: 11px; }
             header h1 { font-size: 18px; }
-            .modal-box { padding: 16px; }
+            .modal { padding: 16px; }
+            .modal-box { width: 100%; max-width: 100%; padding: 16px; max-height: 90vh; margin: 16px; border-radius: 12px; }
+            .modal-title { font-size: 16px; margin-bottom: 16px; }
+            .form-group input { font-size: 16px; padding: 12px; }
+            .btn { font-size: 14px; padding: 12px; }
+            .modal-actions { flex-direction: column; gap: 8px; margin-top: 16px; }
+            .modal-actions .btn { width: 100%; }
+            header { padding: 12px; }
+            header h1 { font-size: 16px; }
+            .btn { padding: 8px; font-size: 12px; }
+            .admin-content { padding: 12px; }
+            .stats { grid-template-columns: 1fr; }
+            .cliente-back { bottom: 16px; right: 16px; }
+            .cliente-back .btn { padding: 10px 12px; font-size: 12px; }
         }
     </style>
 </head>
@@ -164,22 +160,6 @@
 
 <div class="app">
     <!-- PANTALLA INICIO -->
-    <div id="inicio" class="inicio">
-        <div class="inicio-box">
-            <div class="inicio-logo">🏆</div>
-            <h1 class="inicio-title">Carnet FDT</h1>
-            <p class="inicio-subtitle">Sistema de fidelización gamificado</p>
-            <div class="inicio-buttons">
-                <button class="btn-option btn-cliente" onclick="irCliente()">
-                    👤 Soy Cliente
-                </button>
-                <button class="btn-option btn-admin" onclick="solicitarPassword()">
-                    🔑 Soy Admin
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- ADMIN PANEL -->
     <div id="admin" class="admin">
         <header>
@@ -405,7 +385,6 @@ function detectarYCargarCliente() {
             console.log('✅ Cliente encontrado:', cliente);
             clienteViendose = cliente;
             sessionStorage.setItem('clienteViendose', cliente.id);
-            document.getElementById('inicio').style.display = 'none';
             document.getElementById('cliente').classList.add('active');
             mostrarCliente();
         } else {
@@ -458,7 +437,6 @@ function verificarPassword() {
     const pass = document.getElementById('campo-password').value;
     if (pass === PASSWORD_ADMIN) {
         sessionStorage.setItem('adminLogueado', 'true');
-        document.getElementById('inicio').style.display = 'none';
         document.getElementById('admin').classList.add('active');
         mostrarAdmin();
         cerrarPassword();
@@ -488,7 +466,6 @@ function abrirCliente() {
 
     clienteViendose = cliente;
     sessionStorage.setItem('clienteViendose', id);
-    document.getElementById('inicio').style.display = 'none';
     document.getElementById('cliente').classList.add('active');
     mostrarCliente();
     document.getElementById('modal-cliente-id').classList.remove('active');
